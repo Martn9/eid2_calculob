@@ -2,7 +2,7 @@ from calculos import RUT, analizar
 from consola import imprimir_analisis
 
 
-def main():
+def ejecutar_en_consola():
     analisis = analizar(RUT)
     imprimir_analisis(analisis)
 
@@ -12,11 +12,17 @@ def main():
         print(f"\nNo se pudieron generar los graficos: falta '{error.name}'.")
         return
 
-    rutas = generar_graficos(analisis)
+    rutas = generar_graficos(analisis, mostrar=False)
     print("\n4. Graficos generados automaticamente:")
     for ruta in rutas:
         print(f"  - {ruta}")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if "--consola" in sys.argv:
+        ejecutar_en_consola()
+    else:
+        from interfaz import iniciar_aplicacion
+        iniciar_aplicacion()

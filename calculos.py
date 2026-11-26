@@ -1,11 +1,11 @@
 from math import log
 
 RUT_COMPLETO = "21.947.172-6"
-RUT = "21947172"
+RUT = RUT_COMPLETO.split("-")[0].replace(".", "")
 CASOS = {
-    "A": "WiFi estandar",
+    "A": "WiFi estándar",
     "B": "Fibra con reintentos decrecientes",
-    "C": "Red movil con copia extra",
+    "C": "Red móvil con copia extra",
 }
 UMBRAL = 10
 TOLERANCIA = 1e-10
@@ -45,6 +45,11 @@ def calcular_sumas_parciales(caso, p, cantidad):
 
 
 def cantidad_de_terminos(probabilidades):
+    # Con q = 1-p, el resto del caso C desde i=N+1 es
+    # q^N · Σ (N+j+1)·p·q^(j-1), con j desde 1 hasta infinito.
+    # Las sumas de p·q^(j-1) y j·p·q^(j-1) valen 1 y 1/p.
+    # Así resulta q^N·(N+1+1/p). Esta cota también cubre A y B,
+    # cuyos términos son menores. El menor p produce la mayor cota.
     p_menor = min(probabilidades.values())
     cantidad = 10
     while (1 - p_menor) ** cantidad * (cantidad + 1 + 1 / p_menor) > TOLERANCIA:
@@ -73,8 +78,8 @@ def evaluar_combinacion(caso, p, cantidad):
     sumas = calcular_sumas_parciales(caso, p, cantidad)
     empirico = sumas[-1]
     analitico = limite_analitico(caso, p)
-    ultimo_incremento = abs(sumas[-1] - sumas[-2])
-    converge = (0 < p < 1) and (ultimo_incremento < TOLERANCIA)
+    # En los tres casos, el cociente entre términos sucesivos tiende a 1-p.
+    converge = 0 < p < 1
     viable = (analitico <= UMBRAL) if abs(empirico - UMBRAL) <= 2 * TOLERANCIA else (empirico <= UMBRAL)
     return {
         "sumas": sumas,

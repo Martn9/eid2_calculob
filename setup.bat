@@ -6,7 +6,7 @@ if %errorlevel%==0 (
     set "PY_CMD=py -3"
 ) else (
     where python >nul 2>&1
-    if %errorlevel%==0 (
+    if not errorlevel 1 (
         set "PY_CMD=python"
     ) else (
         echo Error: Python no esta instalado o no esta en el PATH.
