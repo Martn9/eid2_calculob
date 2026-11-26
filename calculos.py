@@ -137,3 +137,33 @@ def analizar(rut=RUT):
         "por_caso": por_caso,
         "mejor": mejor,
     }
+
+
+def detalle_suma(caso, p, datos, k):
+    """Descompone S_k y mide el avance respecto al límite analítico."""
+    sumas = datos["sumas"]
+    if not 1 <= k <= len(sumas):
+        raise ValueError("El índice k debe estar entre 1 y N.")
+    limite = datos["analitico"]
+    return {
+        "anterior": sumas[k - 2] if k > 1 else 0.0,
+        "termino": termino_serie(caso, k, p),
+        "suma": sumas[k - 1],
+        "limite": limite,
+        "error": abs(limite - sumas[k - 1]),
+        "porcentaje": 100 * sumas[k - 1] / limite,
+    }
+
+
+def primer_k_al_99(datos):
+    """Primer índice con S_k ≥ 0,99 L. Se usa el límite de la serie infinita."""
+    objetivo = 0.99 * datos["analitico"]
+    for k, suma in enumerate(datos["sumas"], start=1):
+        if suma >= objetivo:
+            return k
+    raise ValueError("Las sumas disponibles aún no alcanzan el 99 % del límite.")
+
+
+def costo_extra_acumulado(p, k):
+    # Al restar los términos de A a los de C queda la suma geométrica de p·(1−p)^(i−1).
+    return 1 - (1 - p) ** k

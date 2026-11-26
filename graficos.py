@@ -15,8 +15,8 @@ ESTILOS = {
 
 def dibujar_caso(figura, caso, nombre, probabilidades, combinaciones):
     eje = figura.subplots()
-    figura.suptitle(f"Caso {caso} - {nombre}", x=0.06, ha="left", fontsize=13, fontweight="bold")
-    subtitulo = "Las líneas discontinuas indican los límites empíricos."
+    figura.suptitle(f"Caso {caso} · {nombre}", x=0.06, ha="left", fontsize=13, fontweight="bold")
+    subtitulo = "Líneas discontinuas: límites empíricos."
     for p in sorted(set(probabilidades.values())):
         iguales = [nombre for nombre, valor in probabilidades.items() if valor == p]
         if len(iguales) > 1:
@@ -41,7 +41,7 @@ def dibujar_caso(figura, caso, nombre, probabilidades, combinaciones):
             markersize=5,
             markerfacecolor="white",
             markevery=(0.035 * pos, 0.13),
-            label=f"{etiqueta} = {p:.2f} (L = {limite:.4f})",
+            label=f"{etiqueta} = {p:.2f}\nL ≈ {limite:.4f}".replace(".", ","),
         )
 
     eje.set_xscale("log")
@@ -49,10 +49,10 @@ def dibujar_caso(figura, caso, nombre, probabilidades, combinaciones):
     eje.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5), numticks=20))
     eje.xaxis.set_major_formatter(StrMethodFormatter("{x:g}"))
     eje.set_xlabel("Número de términos acumulados k (escala logarítmica)")
-    eje.set_ylabel("Suma parcial acumulada Sk")
+    eje.set_ylabel("Costo acumulado $S_k$")
     eje.set_ylim(bottom=0)
     eje.grid(which="major", color="#DBE3E6", linewidth=0.8)
-    eje.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=3, fontsize=8.5, frameon=False)
+    eje.legend(loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3, fontsize=8.5, columnspacing=1.6, frameon=False)
 
 
 def guardar_grafico(figura, caso, carpeta="graficos"):
@@ -92,3 +92,18 @@ def generar_graficos(analisis, carpeta="graficos", mostrar=True):
             for numero in figuras_creadas:
                 plt.close(numero)
     return rutas
+
+
+def crear_marcador(figura):
+    """Un único punto móvil, independiente de la leyenda de las tres curvas."""
+    eje = figura.axes[0]
+    punto, = eje.plot([], [], linestyle="none", markersize=9,
+                      markeredgecolor="white", markeredgewidth=1.8, zorder=5)
+    return punto
+
+
+def mover_marcador(punto, etiqueta, k, suma):
+    color, marca = ESTILOS[etiqueta]
+    punto.set_marker(marca)
+    punto.set_color(color)
+    punto.set_data([k], [suma])
