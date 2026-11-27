@@ -301,6 +301,40 @@ def crear_explorador_grafico(panel, caso):
     return actualizar
 
 
+def mostrar_detalle(panel, analisis, etiqueta):
+    if etiqueta == "N":
+        p = min(analisis["probabilidades"].values())
+        n = analisis["cantidad"]
+        texto(panel, f"¿Por qué {n} términos?", 17, negrita=True).pack(anchor="w")
+        texto(panel, f"La menor probabilidad es {numero(p, 2)}. Con ella se obtiene una cota "
+              "del resto válida para las nueve series.", wraplength=425).pack(fill="x", pady=8)
+        texto(panel, "Resto ≤ (1 − p)ᵏ · (k + 1 + 1/p)", 13, VERDE, True).pack(anchor="w")
+        for k in (n-1, n):
+            resto = calculos.cota_resto(p, k)
+            signo = "≤" if resto <= calculos.TOLERANCIA else ">"
+            texto(panel, f"k = {k}     cota ≈ {resto:.5e}   {signo}   {calculos.TOLERANCIA:.0e}").pack(anchor="w", pady=3)
+        texto(panel, f"En k = {n} se cumple por primera vez la tolerancia.", 11, VERDE).pack(anchor="w")
+        return
+
+    reglas = {"p1": (2, (1, 3, 5)), "p2": (3, (2, 4, 6)), "p3": (4, (7, 8))}
+    factor, posiciones = reglas[etiqueta]
+    rut = analisis["rut"]
+    color = graficos.ESTILOS[etiqueta][0]
+    texto(panel, f"Origen de {etiqueta}", 17, color, True).pack(anchor="w")
+    digitos = tk.Frame(panel, bg=PAPEL)
+    digitos.pack(pady=10)
+    for i, digito in enumerate(rut, 1):
+        texto(digitos, "d" + subindice(i), 10, GRIS).grid(row=0, column=i)
+        fondo = color if i in posiciones else FONDO
+        tk.Label(digitos, text=digito, width=3, pady=5, bg=fondo,
+                 fg=PAPEL if i in posiciones else TINTA).grid(row=1, column=i, padx=2)
+    simbolos = " + ".join("d" + subindice(i) for i in posiciones)
+    valores = " + ".join(rut[i-1] for i in posiciones)
+    p = analisis["probabilidades"][etiqueta]
+    texto(panel, f"{etiqueta} = {factor} × ({simbolos} + 1) / 100", 12).pack(anchor="w")
+    texto(panel, f"{etiqueta} = {factor} × ({valores} + 1) / 100 = {numero(p, 2)}", 13, color, True).pack(anchor="w", pady=4)
+
+
 def iniciar_aplicacion():
     ventana = tk.Tk()
     ventana.title("Análisis de convergencia")
@@ -329,9 +363,24 @@ def iniciar_aplicacion():
     error.pack(fill="x", pady=4)
     ttk.Separator(formulario).pack(fill="x", pady=8)
     texto(formulario, "Probabilidades", 13, negrita=True).pack(fill="x")
+    analisis = {}
+    detalle = None
+
+    def abrir_detalle(etiqueta):
+        nonlocal detalle
+        if detalle is not None and detalle.winfo_exists():
+            detalle.destroy()
+        detalle = tk.Toplevel(ventana)
+        detalle.title("Detalle del cálculo")
+        detalle.transient(ventana)
+        panel = tk.Frame(detalle, bg=PAPEL, padx=18, pady=14)
+        panel.pack(fill="both", expand=True)
+        mostrar_detalle(panel, analisis, etiqueta)
+        ttk.Button(panel, text="Cerrar", command=detalle.destroy).pack(anchor="e", pady=(8, 0))
+
     valores = {}
     for etiqueta in ("p1", "p2", "p3"):
-        valores[etiqueta] = texto(formulario, f"{etiqueta}     —", 12)
+        valores[etiqueta] = texto(formulario, "", 12)
         valores[etiqueta].pack(fill="x", pady=(8, 0))
 
     espacio = tk.Frame(cuerpo, bg=FONDO)
@@ -355,13 +404,34 @@ def iniciar_aplicacion():
     referencia = texto(formulario, "", 10, GRIS)
     referencia.pack(fill="x", pady=(15, 0))
 
+    def cargar_rut(rut):
+        entrada.delete(0, "end")
+        entrada.insert(0, rut)
+        calcular()
+
+    explorar = ttk.Menubutton(formulario, text="Explorar el cálculo")
+    menu = tk.Menu(explorar, tearoff=False)
+    origen = tk.Menu(menu, tearoff=False)
+    for etiqueta in valores:
+        origen.add_command(label=etiqueta, command=partial(abrir_detalle, etiqueta))
+    menu.add_cascade(label="Origen de las probabilidades", menu=origen)
+    menu.add_command(label="Número de términos", command=partial(abrir_detalle, "N"))
+    menu.add_separator()
+    menu.add_command(label="Probar el umbral", command=partial(cargar_rut, "40000020"))
+    menu.add_command(label="Volver al RUT del equipo", command=partial(cargar_rut, calculos.RUT))
+    explorar.configure(menu=menu)
+    explorar.pack(anchor="w", pady=(7, 0))
+
     def calcular(evento=None):
+        nonlocal analisis
         rut = entrada.get()
         if len(rut) != 8 or not rut.isascii() or not rut.isdigit():
             error.configure(text="Ingresa exactamente ocho dígitos del 0 al 9.")
             entrada.focus_set()
             return
 
+        if detalle is not None and detalle.winfo_exists():
+            detalle.destroy()
         analisis = calculos.analizar(rut)
         probabilidades = analisis["probabilidades"]
         consola.imprimir_analisis(analisis)

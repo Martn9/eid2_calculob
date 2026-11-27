@@ -44,15 +44,19 @@ def calcular_sumas_parciales(caso, p, cantidad):
     return sumas
 
 
-def cantidad_de_terminos(probabilidades):
+def cota_resto(p, k):
     # Con q = 1-p, el resto del caso C desde i=N+1 es
     # q^N · Σ (N+j+1)·p·q^(j-1), con j desde 1 hasta infinito.
     # Las sumas de p·q^(j-1) y j·p·q^(j-1) valen 1 y 1/p.
     # Así resulta q^N·(N+1+1/p). Esta cota también cubre A y B,
     # cuyos términos son menores. El menor p produce la mayor cota.
+    return (1 - p) ** k * (k + 1 + 1 / p)
+
+
+def cantidad_de_terminos(probabilidades):
     p_menor = min(probabilidades.values())
     cantidad = 10
-    while (1 - p_menor) ** cantidad * (cantidad + 1 + 1 / p_menor) > TOLERANCIA:
+    while cota_resto(p_menor, cantidad) > TOLERANCIA:
         cantidad += 1
     return cantidad
 
